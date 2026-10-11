@@ -421,8 +421,8 @@ export function SlidingPuzzleGame({ onClose, onBackToGames }: { onClose: () => v
       </div>
 
       {/* Game Board */}
-      <div className="flex-1 flex items-center justify-center overflow-auto p-8">
-        <div className="flex gap-12 items-center">
+      <div className="flex-1 flex items-center justify-center overflow-auto p-4 sm:p-8">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 items-center justify-center">
           {/* Current Puzzle */}
           <div className="flex flex-col items-center gap-6">
             <div

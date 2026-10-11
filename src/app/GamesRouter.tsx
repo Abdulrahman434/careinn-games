@@ -1,7 +1,10 @@
 import { useEffect, useState, type ComponentType } from "react";
-import { BrowserRouter, Link, Route, Routes, useNavigate } from "react-router";
-import { useTheme, SPACE, TYPE_SCALE, WEIGHT } from "./components/ThemeContext";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router";
+import { RotateCw } from "lucide-react";
+import { useTheme } from "./components/ThemeContext";
 import { useLocale } from "./components/i18n";
+import { GamesHub } from "./components/games/GamesHub";
+
 import { MemoryGame } from "./components/games/MemoryGame";
 import { TicTacToeGame } from "./components/games/TicTacToeGame";
 import { SlidingPuzzleGame } from "./components/games/SlidingPuzzleGame";
@@ -13,50 +16,86 @@ import { WordSearchGame } from "./components/games/WordSearchGame";
 import { ReactionTimeGame } from "./components/games/ReactionTimeGame";
 import { BrainMathGame } from "./components/games/BrainMathGame";
 import { TriviaQuizGame } from "./components/games/TriviaQuizGame";
-import { JigsawPuzzleGame } from "./components/games/JigsawPuzzleGame";
 import { ImageJigsawGame } from "./components/games/ImageJigsawGame";
 import { WordChainGame } from "./components/games/WordChainGame";
 
 type GameProps = { onClose: () => void; onBackToGames: () => void };
 
-const GAMES: { path: string; title: string; Component: ComponentType<GameProps> }[] = [
-  { path: "memory", title: "Memory", Component: MemoryGame },
-  { path: "tictactoe", title: "Tic Tac Toe", Component: TicTacToeGame },
-  { path: "sliding", title: "Sliding Puzzle", Component: SlidingPuzzleGame },
-  { path: "color", title: "Color Match", Component: ColorMatchGame },
-  { path: "pattern", title: "Pattern Memory", Component: PatternMemoryGame },
-  { path: "emoji", title: "Emoji Match", Component: EmojiMatchGame },
-  { path: "simon", title: "Simon Says", Component: SimonSaysGame },
-  { path: "wordsearch", title: "Word Search", Component: WordSearchGame },
-  { path: "reaction", title: "Reaction Time", Component: ReactionTimeGame },
-  { path: "brainmath", title: "Brain Math", Component: BrainMathGame },
-  { path: "trivia", title: "Trivia Quiz", Component: TriviaQuizGame },
-  { path: "puzzle", title: "Jigsaw Puzzle", Component: JigsawPuzzleGame },
-  { path: "imagepuzzle", title: "Image Jigsaw", Component: ImageJigsawGame },
-  { path: "wordchain", title: "Word Chain", Component: WordChainGame },
+const GAMES: { path: string; Component: ComponentType<GameProps> }[] = [
+  { path: "memory", Component: MemoryGame },
+  { path: "tictactoe", Component: TicTacToeGame },
+  { path: "sliding", Component: SlidingPuzzleGame },
+  { path: "color", Component: ColorMatchGame },
+  { path: "pattern", Component: PatternMemoryGame },
+  { path: "emoji", Component: EmojiMatchGame },
+  { path: "simon", Component: SimonSaysGame },
+  { path: "wordsearch", Component: WordSearchGame },
+  { path: "reaction", Component: ReactionTimeGame },
+  { path: "brainmath", Component: BrainMathGame },
+  { path: "trivia", Component: TriviaQuizGame },
+  { path: "puzzle", Component: ImageJigsawGame },
+  { path: "imagepuzzle", Component: ImageJigsawGame },
+  { path: "wordchain", Component: WordChainGame },
 ];
-
-const DESIGN_W = 1920;
-const DESIGN_H = 1080;
-
-const getScale = () => Math.min(window.innerWidth / DESIGN_W, window.innerHeight / DESIGN_H);
-
-function useCanvasScale() {
-  const [scale, setScale] = useState(getScale);
-  useEffect(() => {
-    const onResize = () => setScale(getScale());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  return scale;
-}
 
 function GameRoute({ Component }: { Component: ComponentType<GameProps> }) {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { dir, fontFamily } = useLocale();
-  const scale = useCanvasScale();
+
+  const [dimensions, setDimensions] = useState({
+    width: typeof window !== "undefined" ? window.innerWidth : 1920,
+    height: typeof window !== "undefined" ? window.innerHeight : 1080,
+  });
+
+  const [isForceRotated, setIsForceRotated] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
+  }, []);
+
+  const { width, height } = dimensions;
+  const isPortrait = width < height;
+
+  // Fully adaptive virtual coordinates so the canvas ALWAYS fills 100% of the viewport.
+  // No empty letterboxing, no dead white/black bars on Laptop, TV, tablet, or phone (vertical & horizontal).
+  let virtualW: number;
+  let virtualH: number;
+  let scale: number;
+
+  if (isForceRotated) {
+    // When manually rotated on portrait mobile to play full landscape:
+    // Scaled to fill the screen dimensions rotated 90 degrees
+    virtualH = 1080;
+    virtualW = Math.max(1440, Math.round(1080 * (height / width)));
+    scale = width / 1080;
+  } else if (isPortrait) {
+    // Mobile / Tablet Portrait view:
+    // Virtual width is set to 960px so all headers and boards fit without horizontal scroll or clipping
+    virtualW = 960;
+    virtualH = Math.round(960 * (height / width));
+    scale = width / virtualW;
+  } else {
+    // Landscape view (TV, Laptop, Desktop, Tablet landscape, Mobile landscape):
+    // Virtual height is 1080px, virtual width matches the viewport aspect ratio
+    virtualH = 1080;
+    virtualW = Math.max(1440, Math.round(1080 * (width / height)));
+    scale = height / virtualH;
+  }
+
   const goHome = () => navigate("/");
+
   return (
     <div
       style={{
@@ -66,64 +105,44 @@ function GameRoute({ Component }: { Component: ComponentType<GameProps> }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: theme.background,
+        backgroundColor: theme.background || "#081b24",
       }}
     >
+      {/* 100% Screen-filling Adaptive Game Canvas */}
       <div
         dir={dir}
         style={{
-          position: "relative",
-          flexShrink: 0,
-          width: DESIGN_W,
-          height: DESIGN_H,
-          overflow: "hidden",
-          transform: `scale(${scale})`,
+          position: "absolute",
+          width: `${virtualW}px`,
+          height: `${virtualH}px`,
+          transform: isForceRotated
+            ? `rotate(90deg) scale(${scale})`
+            : `scale(${scale})`,
           transformOrigin: "center center",
-          background: theme.gradientCanvas,
+          background: theme.gradientCanvas || theme.background,
           fontFamily,
+          overflow: "hidden",
         }}
       >
         <Component onClose={goHome} onBackToGames={goHome} />
       </div>
-    </div>
-  );
-}
 
-function GamesIndex() {
-  const { theme } = useTheme();
-  const { dir, fontFamily } = useLocale();
-  return (
-    <div
-      dir={dir}
-      style={{
-        minHeight: "100vh",
-        padding: SPACE[4],
-        background: theme.background,
-        color: theme.textHeading,
-        fontFamily,
-      }}
-    >
-      <h1 style={{ marginBottom: SPACE[3], fontSize: TYPE_SCALE["2xl"], fontWeight: WEIGHT.bold }}>Games</h1>
-      <ul style={{ display: "flex", flexWrap: "wrap", gap: SPACE[2], listStyle: "none", padding: 0 }}>
-        {GAMES.map(({ path, title }) => (
-          <li key={path}>
-            <Link
-              to={`/${path}`}
-              style={{
-                display: "block",
-                padding: `${SPACE[2]} ${SPACE[3]}`,
-                fontSize: TYPE_SCALE.md,
-                borderRadius: theme.radiusMd,
-                background: theme.surface,
-                color: theme.textHeading,
-                textDecoration: "none",
-              }}
-            >
-              {title}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* Rotation toggle available in portrait mode if user wants landscape experience on phone */}
+      {isPortrait && (
+        <button
+          onClick={() => setIsForceRotated(!isForceRotated)}
+          title="Toggle Orientation"
+          aria-label="Toggle Orientation"
+          className="fixed bottom-4 right-4 z-[999] flex items-center gap-1.5 px-3 py-2 rounded-full text-white cursor-pointer active:scale-95 text-xs font-semibold shadow-lg backdrop-blur-md transition-all duration-200"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            border: "1px solid rgba(255, 255, 255, 0.25)",
+          }}
+        >
+          <RotateCw size={14} />
+          <span>{isForceRotated ? "Portrait" : "Landscape"}</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -132,9 +151,13 @@ export default function GamesRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<GamesIndex />} />
+        <Route path="/" element={<GamesHub />} />
         {GAMES.map(({ path, Component }) => (
-          <Route key={path} path={`/${path}`} element={<GameRoute Component={Component} />} />
+          <Route
+            key={path}
+            path={`/${path}`}
+            element={<GameRoute Component={Component} />}
+          />
         ))}
       </Routes>
     </BrowserRouter>

@@ -387,21 +387,53 @@ export function ImageJigsawGame({ onClose, onBackToGames }: { onClose: () => voi
         )}
 
         {gameState === "playing" && (
-          <>
-            <div
-              className="absolute top-8 left-8 w-[200px] rounded-xl overflow-hidden shadow-md z-10 pointer-events-none"
-              style={{ border: `2px solid ${theme.textMuted || '#ccc'}`, aspectRatio: imageAspectRatio || 1 }}
-            >
-              <ApiImage src={imageUrl} alt="Puzzle preview" className="w-full h-full object-contain bg-gray-100" />
+          <div className="w-full flex-1 flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12 max-w-7xl mx-auto px-4 py-2">
+            {/* Target Preview & Info Sidebar */}
+            <div className="flex flex-row lg:flex-col items-center justify-center gap-4 lg:gap-6 shrink-0">
+              {/* Preview Card */}
+              <div className="flex flex-col items-center gap-1.5">
+                <div
+                  className="w-[140px] sm:w-[170px] lg:w-[230px] rounded-2xl overflow-hidden shadow-xl border-2 border-white/80 bg-white"
+                  style={{
+                    aspectRatio: imageAspectRatio || 1,
+                  }}
+                >
+                  <ApiImage
+                    src={imageUrl}
+                    alt="Puzzle preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {isRTL ? "الصورة الأصلية" : "Target Image"}
+                </span>
+              </div>
+
+              {/* Category & Grid Badges */}
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5">
+                <div className="px-5 py-2.5 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center min-w-[110px]">
+                  <span className="text-[11px] uppercase text-gray-400 font-bold">{gt.jigsawCategory}</span>
+                  <span className="font-bold text-sm" style={{ color: theme.textHeading }}>
+                    {category === 'Nature' ? gt.jigsawNature : gt.jigsawAnimals}
+                  </span>
+                </div>
+                <div className="px-5 py-2.5 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center min-w-[110px]">
+                  <span className="text-[11px] uppercase text-gray-400 font-bold">{gt.jigsawGrid}</span>
+                  <span className="font-bold text-sm" style={{ color: theme.textHeading }}>
+                    {difficulty}x{difficulty}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="relative flex flex-col items-center gap-8">
+
+            {/* Interactive Puzzle Board */}
+            <div className="flex flex-col items-center justify-center w-full max-w-[620px]">
               <div
-                className="grid gap-1 bg-gray-200 p-1 rounded-xl shadow-2xl overflow-hidden"
+                className="grid gap-1.5 bg-gray-200/90 p-2 rounded-2xl shadow-2xl overflow-hidden w-full"
                 style={{
                   direction: "ltr",
                   gridTemplateColumns: `repeat(${difficulty}, 1fr)`,
-                  width: "min(80vw, 600px)",
-                  aspectRatio: imageAspectRatio || 1
+                  aspectRatio: imageAspectRatio || 1,
                 }}
               >
                 {pieces.map((id, i) => {
@@ -413,12 +445,12 @@ export function ImageJigsawGame({ onClose, onBackToGames }: { onClose: () => voi
                     <button
                       key={i}
                       onClick={() => handlePieceClick(i)}
-                      className="relative w-full h-full overflow-hidden transition-all duration-200"
+                      className="relative w-full h-full overflow-hidden transition-all duration-200 cursor-pointer rounded-sm"
                       style={{
                         border: selectedPiece === i ? "4px solid #3B82F6" : "none",
                         boxShadow: selectedPiece === i ? "inset 0 0 40px rgba(59,130,246,0.5)" : "none",
                         zIndex: selectedPiece === i ? 10 : 1,
-                        transform: selectedPiece === i ? "scale(0.95)" : "scale(1)"
+                        transform: selectedPiece === i ? "scale(0.96)" : "scale(1)"
                       }}
                     >
                       <div
@@ -431,26 +463,16 @@ export function ImageJigsawGame({ onClose, onBackToGames }: { onClose: () => voi
                       />
                       <div className="absolute inset-0 bg-black/5" />
                       {showNumbers && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <span className="text-white text-3xl font-black drop-shadow-lg">{id + 1}</span>
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                          <span className="text-white text-2xl sm:text-3xl font-black drop-shadow-lg">{id + 1}</span>
                         </div>
                       )}
                     </button>
                   );
                 })}
               </div>
-              <div className="flex gap-4">
-                <div className="px-6 py-3 bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col items-center">
-                  <span className="text-xs uppercase text-gray-400 font-bold">{gt.jigsawCategory}</span>
-                  <span className="font-bold">{category === 'Nature' ? gt.jigsawNature : gt.jigsawAnimals}</span>
-                </div>
-                <div className="px-6 py-3 bg-white rounded-2xl shadow-md border border-gray-100 flex flex-col items-center">
-                  <span className="text-xs uppercase text-gray-400 font-bold">{gt.jigsawGrid}</span>
-                  <span className="font-bold">{difficulty}x{difficulty}</span>
-                </div>
-              </div>
             </div>
-          </>
+          </div>
         )}
 
         {gameState === "complete" && (
